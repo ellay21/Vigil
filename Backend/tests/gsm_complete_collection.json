@@ -1,0 +1,222 @@
+{
+	"info": {
+		"_postman_id": "d1e2f3a4-5678-90bc-def1-234567890abc",
+		"name": "GSM Safety Monitor Complete",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. System Health",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Send Device Data (Seed)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"device_id\": \"AI-TEST-001\",\n  \"temperature\": 95,\n  \"smoke\": 1,\n  \"light\": 150,\n  \"state\": \"CRITICAL\",\n  \"timestamp\": \"2025-12-22T12:00:00Z\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/device/data",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"device",
+						"data"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Get Device Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/device/AI-TEST-001/status",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"device",
+						"AI-TEST-001",
+						"status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Get Device History",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/device/AI-TEST-001/history?limit=10",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"device",
+						"AI-TEST-001",
+						"history"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "10"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. AI Risk Assessment",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/device/AI-TEST-001/risk",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"device",
+						"AI-TEST-001",
+						"risk"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. AI Explanation",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/device/AI-TEST-001/explanation",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"device",
+						"AI-TEST-001",
+						"explanation"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. AI Voice Alert (TTS)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/device/AI-TEST-001/voice",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"device",
+						"AI-TEST-001",
+						"voice"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "8. AI Maintenance Insight",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/device/AI-TEST-001/maintenance",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"device",
+						"AI-TEST-001",
+						"maintenance"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "9. AI System Summary",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/summary",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"api",
+						"summary"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
