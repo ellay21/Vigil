@@ -1,0 +1,11 @@
+node_modules/
+.env
+.vscode/
+.github/
+dist/
+build/
+.dart_tool/
+.idea/
+*.apk
+*.aab
+.DS_Store
