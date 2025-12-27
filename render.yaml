@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: vigil-backend
+    env: node
+    plan: free
+    rootDirectory: Backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
