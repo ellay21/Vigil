@@ -77,6 +77,7 @@ app.post('/api/login', async (req: Request, res: Response) => {
 
 // Device data ingestion endpoint
 app.post('/api/device/data', async (req: Request, res: Response) => {
+  console.log(`[${new Date().toISOString()}] Received ThingSpeak payload:`, JSON.stringify(req.body, null, 2));
   try {
     // Validate payload
     const validationResult = DeviceDataSchema.safeParse(req.body);
@@ -364,6 +365,7 @@ const fetchThingSpeakData = async () => {
         `, [deviceId, temp, voltage, motion, vibration, gasVal > 200 ? 1 : 0, state, timestamp]);
         
         console.log(`[ThingSpeak] Synced data for ${deviceId} at ${timestamp}`);
+        console.log('Payload:', JSON.stringify(feed, null, 2));
       }
     }
   } catch (error) {
