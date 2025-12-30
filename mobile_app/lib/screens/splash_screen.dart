@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import 'login_screen.dart';
@@ -20,12 +21,11 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuth() async {
-    await Future.delayed(const Duration(seconds: 3)); // Show splash for 3 seconds
+    await Future.delayed(const Duration(seconds: 3)); 
     if (!mounted) return;
 
     final appProvider = Provider.of<AppProvider>(context, listen: false);
-    // Wait for auth check to complete if it hasn't already (though provider constructor starts it)
-    // A better way is to listen to the provider, but for simplicity:
+
     if (appProvider.isAuthenticated) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainScreen()),
@@ -45,10 +45,10 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.security,
-              size: 100,
-              color: Colors.cyanAccent,
+            SvgPicture.asset(
+              'assets/logo.svg',
+              width: 120,
+              height: 120,
             )
             .animate(onPlay: (controller) => controller.repeat())
             .shimmer(duration: 1200.ms, color: const Color(0xFF80DDFF))
@@ -60,7 +60,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 24),
             
             const Text(
-              'GSM MONITOR',
+              'VIGIL',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,

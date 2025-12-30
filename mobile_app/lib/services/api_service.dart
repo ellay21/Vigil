@@ -5,8 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/device_data.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.43.182:3000/api';
-
+  static const String baseUrl = 'https://vigil-lqhj.onrender.com/api';
   Future<Map<String, String>> _getHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
@@ -162,6 +161,17 @@ class ApiService {
       return data['answer'];
     } else {
       throw Exception('Failed to get chat response');
+    }
+  }
+
+  Future<MaintenanceInsight> getDeviceMaintenance(String deviceId, {required String lang}) async {
+    final headers = await _getHeaders();
+    final response = await http.get(Uri.parse('$baseUrl/device/$deviceId/maintenance?lang=$lang'), headers: headers);
+
+    if (response.statusCode == 200) {
+      return MaintenanceInsight.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to load maintenance insight');
     }
   }
 }

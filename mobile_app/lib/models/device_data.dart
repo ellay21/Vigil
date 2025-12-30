@@ -118,3 +118,17 @@ class VoiceAlert {
     );
   }
 }
+
+class MaintenanceInsight {
+  final bool maintenanceRequired;
+  final String suggestedAction;
+
+  MaintenanceInsight({required this.maintenanceRequired, required this.suggestedAction});
+
+  factory MaintenanceInsight.fromJson(Map<String, dynamic> json) {
+    return MaintenanceInsight(
+      maintenanceRequired: json['maintenance_required'] ?? false,
+      suggestedAction: json['suggested_action'] ?? 'No action suggested.',
+    );
+  }
+}
