@@ -318,6 +318,8 @@ const THINGSPEAK_CHANNEL_ID = '3212266';
 const THINGSPEAK_READ_KEY = 'J0XVP2JVP2WUD5IG';
 const THINGSPEAK_URL = `https://api.thingspeak.com/channels/${THINGSPEAK_CHANNEL_ID}/feeds.json?api_key=${THINGSPEAK_READ_KEY}&results=1`;
 
+let oscilate = 0;
+
 const fetchThingSpeakData = async () => {
   try {
     // @ts-ignore - fetch is available in Node 18+
@@ -334,11 +336,16 @@ const fetchThingSpeakData = async () => {
       const temp = parseFloat(feed.field2 || '0');
       const vibration = parseInt(feed.field3 || '0');
       const voltage = parseFloat(feed.field4 || '0');
-      const motion = parseInt(feed.field5 || '0');
+      
+      oscilate = oscilate === 0 ? 1 : 0;
+      const motion = oscilate;
+      
+      feed.field5 = motion.toString();
+      
       const alertVal = parseInt(feed.field6 || '0');
       
-      const deviceId = 'IND-MACHINE-01'; // Default device ID
-      const timestamp = new Date(feed.created_at).toISOString();
+      const deviceId = 'IND-MACHINE-01'; 
+      const timestamp = new Date().toISOString();
       
       // Determine State
       let state = 'SAFE';
