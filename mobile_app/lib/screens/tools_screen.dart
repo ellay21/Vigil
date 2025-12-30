@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:glassmorphism/glassmorphism.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
-import '../services/api_service.dart';
+import '../services/report_service.dart';
 
 class ToolsScreen extends StatefulWidget {
   const ToolsScreen({super.key});
@@ -16,71 +13,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
   bool _sentryMode = false;
   TimeOfDay _armTime = const TimeOfDay(hour: 22, minute: 0);
   TimeOfDay _disarmTime = const TimeOfDay(hour: 6, minute: 0);
+  String _reportLang = 'en';
 
   Future<void> _generatePdf() async {
-    final pdf = pw.Document();
-    final api = ApiService();
-    
-    // Fetch data for report
-    final devices = await api.getAllDevices();
-    final summary = await api.getSystemSummary();
-    
-    // Create a dense report
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context context) {
-          return [
-            pw.Header(level: 0, child: pw.Text('Industrial IoT System Report')),
-            pw.Text('Generated: ${DateTime.now().toString()}'),
-            pw.SizedBox(height: 20),
-            
-            // Executive Summary
-            pw.Header(level: 1, child: pw.Text('Executive Summary')),
-            pw.Text(summary.summary),
-            pw.SizedBox(height: 10),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text('Overall Status: ${summary.overallStatus}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                pw.Text('Devices at Risk: ${summary.devicesAtRisk}', style: pw.TextStyle(color: PdfColors.red)),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-
-            // Device Status Table
-            pw.Header(level: 1, child: pw.Text('Device Status Overview')),
-            pw.TableHelper.fromTextArray(
-              context: context,
-              data: <List<String>>[
-                <String>['Device ID', 'Status', 'Last Seen'],
-                ...devices.map((d) => [d.id, d.currentState, d.lastSeen]),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-
-            // Detailed Alerts Log
-            pw.Header(level: 1, child: pw.Text('Critical Alerts Log')),
-            pw.Text('Showing recent critical events across all devices.'),
-            pw.SizedBox(height: 10),
-            // We would ideally fetch alerts for all devices here, but for now let's list the risky ones
-            ...devices.where((d) => d.currentState == 'DANGER' || d.currentState == 'WARNING').map((d) {
-              return pw.Bullet(text: 'Device ${d.id} is in ${d.currentState} state.');
-            }),
-            
-            pw.SizedBox(height: 30),
-            pw.Footer(
-              leading: pw.Text('GSM Industrial Monitor'),
-              trailing: pw.Text('Page 1'),
-            ),
-          ];
-        },
-      ),
-    );
-
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
-    );
+    await ReportService.generateSystemReport(lang: _reportLang);
   }
 
   @override
@@ -133,11 +69,29 @@ class _ToolsScreenState extends State<ToolsScreen> {
             _buildToolCard(
               title: 'Reports',
               icon: Icons.picture_as_pdf,
-              child: ListTile(
-                title: const Text('Generate Safety PDF', style: TextStyle(color: Colors.white)),
-                subtitle: const Text('Download full history report', style: TextStyle(color: Colors.white54)),
-                trailing: const Icon(Icons.download, color: Colors.white),
-                onTap: _generatePdf,
+              child: Column(
+                children: [
+                  ListTile(
+                    title: const Text('Report Language', style: TextStyle(color: Colors.white)),
+                    trailing: DropdownButton<String>(
+                      value: _reportLang,
+                      dropdownColor: const Color(0xFF2A2E3E),
+                      style: const TextStyle(color: Colors.white),
+                      underline: Container(),
+                      items: const [
+                        DropdownMenuItem(value: 'en', child: Text('English')),
+                        DropdownMenuItem(value: 'am', child: Text('Amharic')),
+                      ],
+                      onChanged: (val) => setState(() => _reportLang = val!),
+                    ),
+                  ),
+                  ListTile(
+                    title: const Text('Generate Safety PDF', style: TextStyle(color: Colors.white)),
+                    subtitle: const Text('Download full history report', style: TextStyle(color: Colors.white54)),
+                    trailing: const Icon(Icons.download, color: Colors.white),
+                    onTap: _generatePdf,
+                  ),
+                ],
               ),
             ),
           ],
@@ -147,9 +101,13 @@ class _ToolsScreenState extends State<ToolsScreen> {
   }
 
   Widget _buildToolCard({required String title, required IconData icon, required Widget child}) {
+    double height = 150;
+    if (title == 'Smart Sentry Mode' && _sentryMode) height = 250;
+    if (title == 'Reports') height = 200;
+
     return GlassmorphicContainer(
       width: double.infinity,
-      height: _sentryMode && title == 'Smart Sentry Mode' ? 250 : 150,
+      height: height,
       borderRadius: 20,
       blur: 20,
       alignment: Alignment.center,
