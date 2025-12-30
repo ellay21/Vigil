@@ -8,7 +8,10 @@ import 'package:intl/intl.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../services/api_service.dart';
+import '../services/report_service.dart';
 import '../models/device_data.dart';
 import '../providers/app_provider.dart';
 import 'device_list_screen.dart';
@@ -31,12 +34,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // Voice
   final stt.SpeechToText _speech = stt.SpeechToText();
   final FlutterTts _flutterTts = FlutterTts();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isListening = false;
 
   @override
   void initState() {
     super.initState();
     _initNotifications();
+    _initVoice();
     _refreshData();
   }
 
@@ -44,6 +49,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const settings = InitializationSettings(android: androidSettings);
     await _notificationsPlugin.initialize(settings);
+  }
+
+  void _initVoice() async {
+    await _flutterTts.setPitch(0.7); // Lower pitch for male-like voice
+    await _flutterTts.setSpeechRate(0.55); // Slightly faster than default
   }
 
   Future<void> _showNotification(String title, String body) async {
@@ -57,33 +67,127 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _listen() async {
     if (!_isListening) {
-      bool available = await _speech.initialize();
+      // Request permission explicitly
+      var status = await Permission.microphone.status;
+      if (!status.isGranted) {
+        status = await Permission.microphone.request();
+        if (!status.isGranted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Microphone permission is required for voice commands')),
+            );
+          }
+          return;
+        }
+      }
+
+      bool available = await _speech.initialize(
+        onStatus: (status) {
+          debugPrint('Speech Status: $status');
+          if (status == 'notListening' || status == 'done') {
+            if (mounted) setState(() => _isListening = false);
+          }
+        },
+        onError: (errorNotification) {
+          debugPrint('Speech Error: $errorNotification');
+          if (mounted) setState(() => _isListening = false);
+        },
+      );
+      
       if (available) {
         setState(() => _isListening = true);
-        _speech.listen(onResult: (val) {
-          if (val.hasConfidenceRating && val.confidence > 0) {
-            // Simple command parsing
-            if (val.recognizedWords.toLowerCase().contains('status')) {
-              _speakStatus();
+        final appProvider = Provider.of<AppProvider>(context, listen: false);
+        final localeId = appProvider.isAmharic ? 'am_ET' : 'en_US';
+        
+        _speech.listen(
+          localeId: localeId,
+          onResult: (val) {
+            debugPrint('Recognized: ${val.recognizedWords}');
+            final words = val.recognizedWords.toLowerCase();
+            if (words.contains('status') ) {
+              _speakStatus(lang: 'en');
+              _speech.stop(); 
+            } else if (words.contains('report')) {
+              _speakStatus(lang: 'am');
+              _speech.stop();
             }
-          }
-          setState(() => _isListening = false);
-        });
+          },
+        );
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Speech recognition not available on this device')),
+          );
+        }
       }
     } else {
-      setState(() => _isListening = false);
       _speech.stop();
+      setState(() => _isListening = false);
     }
   }
 
-  void _speakStatus() async {
+  void _speakStatus({String? lang}) async {
     // Speak the summary
-    // We need the data first, but let's assume we have it or fetch it
     try {
-      final summary = await _apiService.getSystemSummary();
-      await _flutterTts.speak("System status is ${summary.overallStatus}. ${summary.summary}");
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
+      final targetLang = lang ?? (appProvider.isAmharic ? 'am' : 'en');
+      final isAmharic = targetLang == 'am';
+      final langCode = isAmharic ? 'am-ET' : 'en-US';
+
+      final summary = await _apiService.getSystemSummary(lang: targetLang);
+      
+      String statusText = summary.overallStatus;
+      if (isAmharic) {
+        switch (statusText.toUpperCase()) {
+          case 'SAFE': statusText = 'ደህንነቱ የተጠበቀ'; break;
+          case 'WARNING': statusText = 'ማስጠንቀቂያ'; break;
+          case 'DANGER': statusText = 'አደጋ'; break;
+          case 'OFFLINE': statusText = 'ከመስመር ውጭ'; break;
+        }
+      }
+
+      String text = isAmharic 
+        ? "የሲስተም ሁኔታ $statusText ነው። ${summary.summary}። ሪፖርት በማዘጋጀት ላይ..."
+        : "System status is ${summary.overallStatus}. ${summary.summary}. Generating report...";
+
+      // Check availability and configure TTS
+      var available = await _flutterTts.isLanguageAvailable(langCode);
+      if (isAmharic && (available == false || available == null)) {
+         // Try generic 'am'
+         available = await _flutterTts.isLanguageAvailable('am');
+      }
+
+      if (isAmharic && (available == false || available == null)) {
+         // FALLBACK: Use Online TTS
+         if (mounted) {
+             ScaffoldMessenger.of(context).showSnackBar(
+               const SnackBar(content: Text('Using online voice for Amharic...')),
+             );
+         }
+         
+         final encoded = Uri.encodeComponent(text);
+         final url = "https://translate.google.com/translate_tts?ie=UTF-8&q=$encoded&tl=am&client=tw-ob";
+         await _audioPlayer.play(UrlSource(url));
+         
+      } else {
+        // Use Native TTS
+        await _flutterTts.setLanguage(isAmharic ? 'am' : langCode);
+        if (isAmharic) {
+            await _flutterTts.setPitch(1.0); 
+            await _flutterTts.setSpeechRate(0.5); 
+        } else {
+            await _flutterTts.setPitch(0.7);
+            await _flutterTts.setSpeechRate(0.55);
+        }
+        await Future.delayed(const Duration(milliseconds: 100));
+        await _flutterTts.speak(text);
+      }
+      
+      // Generate PDF after speaking starts
+      await ReportService.generateSystemReport(lang: targetLang);
+      
     } catch (e) {
-      await _flutterTts.speak("I cannot check the status right now.");
+      debugPrint("Error in speakStatus: $e");
     }
   }
 
